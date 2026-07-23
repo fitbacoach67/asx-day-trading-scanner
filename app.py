@@ -118,10 +118,20 @@ with tabs[0]:
     rows = st.session_state.get("candidates", [])
     if rows:
         df = pd.DataFrame(rows)
+
+        # Surface the deterministic reasons behind stronger signals.
+        df["confidence_reason"] = df.apply(
+            lambda row: row["rule_summary"]
+            if row["confidence"] in {"High", "Moderate"}
+            else "",
+            axis=1,
+        )
+
         display_cols = [
             "symbol", "name", "confidence", "score", "setup", "close",
             "relative_volume", "change_pct", "rsi14", "entry", "stop",
-            "target1", "target2", "data_age_minutes", "chart_tradingview"
+            "target1", "target2", "confidence_reason",
+            "data_age_minutes", "chart_tradingview"
         ]
         st.dataframe(
             df[display_cols],
@@ -132,6 +142,11 @@ with tabs[0]:
                     "Chart", display_text="Open chart"
                 ),
                 "median_dollar_volume": st.column_config.NumberColumn(format="$%.0f"),
+                "confidence_reason": st.column_config.TextColumn(
+                    "Why this score",
+                    width="large",
+                    help="Deterministic scoring factors that produced the confidence rating.",
+                ),
             },
         )
 
@@ -142,7 +157,13 @@ with tabs[0]:
         c2.metric("Relative volume", f"{selected_row['relative_volume']:.2f}x")
         c3.metric("Entry / stop", f"${selected_row['entry']} / ${selected_row['stop']}")
         c4.metric("Targets", f"${selected_row['target1']} / ${selected_row['target2']}")
-        st.write(selected_row.get("ai_summary") or selected_row["rule_summary"])
+        st.subheader("Why this confidence rating")
+        st.write(selected_row["rule_summary"])
+
+        ai_summary = selected_row.get("ai_summary")
+        if ai_summary:
+            st.subheader("Groq analysis")
+            st.write(ai_summary)
 
         history = st.session_state.get("histories", {}).get(selected_symbol)
         if history is not None and not history.empty:
