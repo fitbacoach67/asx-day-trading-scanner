@@ -1,3 +1,23 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+from typing import Mapping
+
+import pandas as pd
+
+
+class MarketDataProvider(ABC):
+    @abstractmethod
+    def history(
+        self,
+        symbols: list[str],
+        period: str,
+        interval: str,
+    ) -> Mapping[str, pd.DataFrame]:
+        raise NotImplementedError
+
+
 class YahooFinanceProvider(MarketDataProvider):
     """Prototype data provider. Do not assume it is real-time or execution-grade."""
 
@@ -16,7 +36,7 @@ class YahooFinanceProvider(MarketDataProvider):
         result: dict[str, pd.DataFrame] = {}
 
         for start in range(0, len(symbols), batch_size):
-            batch = symbols[start:start + batch_size]
+            batch = symbols[start : start + batch_size]
 
             try:
                 raw = yf.download(
@@ -95,13 +115,19 @@ class YahooFinanceProvider(MarketDataProvider):
         for column in expected:
             df[column] = pd.to_numeric(df[column], errors="coerce")
 
-        return (
-            df.dropna(subset=expected)
-            .sort_index()
-        )
+        return df.dropna(subset=expected).sort_index()
+
 
 def age_minutes(timestamp: pd.Timestamp) -> float:
     ts = pd.Timestamp(timestamp)
+
     if ts.tzinfo is None:
         ts = ts.tz_localize("UTC")
-    return max(0.0, (datetime.now(timezone.utc) - ts.to_pydatetime()).total_seconds() / 60)
+
+    return max(
+        0.0,
+        (
+            datetime.now(timezone.utc) - ts.to_pydatetime()
+        ).total_seconds()
+        / 60,
+    )
