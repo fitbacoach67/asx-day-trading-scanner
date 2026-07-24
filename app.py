@@ -73,68 +73,69 @@ store = WatchlistStore()
 with st.sidebar:
     st.header("Scan configuration")
 
-    universe_name = st.radio(
-        "Stock universe",
-        options=[
-            "Liquid ASX list",
-            "Full ASX 300",
-        ],
-        index=1,
+    niverse_name = st.radio(
+    "Stock universe",
+    options=[
+        "Liquid ASX list",
+        "Full ASX 300",
+    ],
+    index=1,
+)
+
+universe = load_universe(universe_name)
+
+st.caption(f"{len(universe):,} stocks loaded")
+
+if len(universe) == 0:
+    st.error(
+        "The selected universe file is empty or could not be read."
     )
-
-    universe = load_universe(universe_name)
-
-    st.caption(f"{len(universe):,} stocks loaded")
-
-    interval = st.selectbox(
-        "Bar interval",
-        ["1d", "60m", "30m", "15m"],
-        index=0,
-    )
-
-    period_options = {
-        "1d": ["3mo", "6mo", "1y"],
-        "60m": ["1mo", "3mo", "6mo"],
-        "30m": ["1mo", "3mo"],
-        "15m": ["1mo"],
-    }
-
-    period = st.selectbox(
-        "History",
-        period_options[interval],
-        index=0,
-    )
-
-    min_dollar_m = st.number_input(
-        "Minimum median dollar turnover ($m)",
-        min_value=1.0,
-        max_value=200.0,
-        value=5.0,
-        step=1.0,
-    )
-
-    min_rel_vol = st.number_input(
-        "Minimum relative volume",
-        min_value=1.0,
-        max_value=10.0,
-        value=1.25,
-        step=0.05,
-    )
-
-    min_price = st.number_input(
-        "Minimum share price",
-        min_value=0.01,
-        max_value=100.0,
-        value=0.50,
-        step=0.10,
-    )
-
-   universe_count = len(universe)
-
-if universe_count == 0:
-    st.error("The selected universe file contains no stocks.")
     st.stop()
 
+interval = st.selectbox(
+    "Bar interval",
+    ["1d", "60m", "30m", "15m"],
+    index=0,
+)
+
+period_options = {
+    "1d": ["3mo", "6mo", "1y"],
+    "60m": ["1mo", "3mo", "6mo"],
+    "30m": ["1mo", "3mo"],
+    "15m": ["1mo"],
+}
+
+period = st.selectbox(
+    "History",
+    period_options[interval],
+    index=0,
+)
+
+min_dollar_m = st.number_input(
+    "Minimum median dollar turnover ($m)",
+    min_value=1.0,
+    max_value=200.0,
+    value=5.0,
+    step=1.0,
+)
+
+min_rel_vol = st.number_input(
+    "Minimum relative volume",
+    min_value=1.0,
+    max_value=10.0,
+    value=1.25,
+    step=0.05,
+)
+
+min_price = st.number_input(
+    "Minimum share price",
+    min_value=0.01,
+    max_value=100.0,
+    value=0.50,
+    step=0.10,
+)
+
+universe_count = len(universe)
 minimum_symbols = min(10, universe_count)
 
 max_symbols = st.slider(
@@ -144,16 +145,16 @@ max_symbols = st.slider(
     value=universe_count,
 )
 
-    use_groq = st.checkbox(
-        "Generate Groq summaries",
-        value=groq_available(),
-    )
+use_groq = st.checkbox(
+    "Generate Groq summaries",
+    value=groq_available(),
+)
 
-    run_scan = st.button(
-        "Run scan",
-        type="primary",
-        use_container_width=True,
-    )
+run_scan = st.button(
+    "Run scan",
+    type="primary",
+    use_container_width=True,
+)
 
 tabs = st.tabs(["Market scan", "Watchlist", "Method and safeguards"])
 
