@@ -44,48 +44,61 @@ class YahooFinanceProvider(MarketDataProvider):
                     f"{start + 1}-{start + len(batch)}"
                 )
                 continue
-        if len(batch) == 1:
-            symbol = batch[0]
-            result[symbol] = self._normalise(raw)
-            continue
 
-        if not isinstance(raw.columns, pd.MultiIndex):
-            print(
-                f"Unexpected Yahoo column format for batch "
-                f"{start + 1}-{start + len(batch)}"
-            )
-            continue
+            if len(batch) == 1:
+                symbol = batch[0]
+                normalised = self._normalise(raw)
 
-        level0 = set(raw.columns.get_level_values(0))
+                if not normalised.empty:
+                    result[symbol] = normalised
 
-        for symbol in batch:
-            if symbol not in level0:
-                print(f"No data returned for {symbol}")
                 continue
 
-            frame = raw[symbol].copy()
-
-            if frame.empty:
+            if not isinstance(raw.columns, pd.MultiIndex):
+                print(
+                    f"Unexpected Yahoo column format for batch "
+                    f"{start + 1}-{start + len(batch)}"
+                )
                 continue
 
-            normalised = self._normalise(frame)
+            level0 = set(raw.columns.get_level_values(0))
 
-            if not normalised.empty:
-                result[symbol] = normalised
+            for symbol in batch:
+                if symbol not in level0:
+                    print(f"No data returned for {symbol}")
+                    continue
 
-    return result
+                frame = raw[symbol].copy()
+
+                if frame.empty:
+                    continue
+
+                normalised = self._normalise(frame)
+
+                if not normalised.empty:
+                    result[symbol] = normalised
+
+        return result
+
     @staticmethod
     def _normalise(frame: pd.DataFrame) -> pd.DataFrame:
         expected = ["Open", "High", "Low", "Close", "Volume"]
+
         df = frame.copy()
-        df = df[[c for c in expected if c in df.columns]]
+        df = df[[column for column in expected if column in df.columns]]
+
         if len(df.columns) != len(expected):
             return pd.DataFrame(columns=expected)
-        df.index = pd.to_datetime(df.index, utc=True)
-        for col in expected:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        return df.dropna(subset=expected).sort_index()
 
+        df.index = pd.to_datetime(df.index, utc=True)
+
+        for column in expected:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+        return (
+            df.dropna(subset=expected)
+            .sort_index()
+        )
 
 def age_minutes(timestamp: pd.Timestamp) -> float:
     ts = pd.Timestamp(timestamp)
