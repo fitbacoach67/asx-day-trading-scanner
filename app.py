@@ -129,12 +129,20 @@ with st.sidebar:
         step=0.10,
     )
 
-    max_symbols = st.slider(
-        "Universe size",
-        min_value=10,
-        max_value=len(universe),
-        value=len(universe),
-    )
+   universe_count = len(universe)
+
+if universe_count == 0:
+    st.error("The selected universe file contains no stocks.")
+    st.stop()
+
+minimum_symbols = min(10, universe_count)
+
+max_symbols = st.slider(
+    "Universe size",
+    min_value=minimum_symbols,
+    max_value=universe_count,
+    value=universe_count,
+)
 
     use_groq = st.checkbox(
         "Generate Groq summaries",
