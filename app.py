@@ -34,6 +34,30 @@ def load_universe(universe_name: str) -> pd.DataFrame:
 
     df = pd.read_csv(path)
 
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+        .str.lower()
+    )
+
+    column_aliases = {
+        "ticker": "symbol",
+        "code": "symbol",
+        "asx code": "symbol",
+        "company": "name",
+        "company name": "name",
+        "constituent": "name",
+    }
+
+    df = df.rename(columns=column_aliases)
+
+    if "symbol" not in df.columns:
+        raise ValueError(
+            f"{path} must contain a 'symbol' column. "
+            f"Columns found: {list(df.columns)}"
+        )
+
     df["symbol"] = (
         df["symbol"]
         .astype(str)
@@ -41,8 +65,22 @@ def load_universe(universe_name: str) -> pd.DataFrame:
         .str.upper()
     )
 
-    return df.drop_duplicates("symbol")
+    if "name" not in df.columns:
+        df["name"] = df["symbol"]
 
+    df["name"] = (
+        df["name"]
+        .fillna(df["symbol"])
+        .astype(str)
+        .str.strip()
+    )
+
+    return (
+        df[["symbol", "name"]]
+        .dropna(subset=["symbol"])
+        .drop_duplicates("symbol")
+        .reset_index(drop=True)
+    )
 
 @st.cache_data(ttl=180, show_spinner=False)
 def fetch_data(symbols: tuple[str, ...], period: str, interval: str):
